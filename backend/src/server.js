@@ -17,8 +17,10 @@ const notesRoutes   = require('./routes/notes');
 const sharedRoutes  = require('./routes/shared');
 const insightsRoutes = require('./routes/insights');
 const errorHandler  = require('./middleware/errorHandler');
+const passport      = require('./config/passport');
 
 const app = express();
+app.use(passport.initialize());
 const PORT = process.env.PORT || 5000;
 
 // ── CORS ─────────────────────────────────────────────────────────

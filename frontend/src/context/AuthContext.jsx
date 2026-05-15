@@ -76,7 +76,30 @@ export const AuthProvider = ({ children }) => {
     clearAuth();
   }, []);
 
-  const value = { user, isLoading, error, login, logout, register, isAuthenticated: !!user };
+  // ── Login with Token (OAuth) ──────────────────────────────────
+  const loginWithToken = useCallback(async (token) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      // Set the token in localStorage first so the client can use it
+      localStorage.setItem('peblo_token', token);
+      
+      // Fetch user profile to verify token and get user data
+      const { data } = await client.get('/auth/me');
+      
+      persistAuth(token, data.user);
+      return { success: true };
+    } catch (err) {
+      clearAuth();
+      const msg = 'OAuth login failed. Please try again.';
+      setError(msg);
+      return { success: false, error: msg };
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const value = { user, isLoading, error, login, logout, register, loginWithToken, isAuthenticated: !!user };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

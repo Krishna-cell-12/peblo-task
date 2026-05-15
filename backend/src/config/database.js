@@ -64,13 +64,56 @@ const initDb = async () => {
 
     db.run(`
       CREATE TABLE IF NOT EXISTS users (
-        id          TEXT PRIMARY KEY,
-        name        TEXT NOT NULL,
-        email       TEXT UNIQUE NOT NULL,
-        password_hash TEXT NOT NULL,
-        created_at  TEXT DEFAULT (datetime('now'))
+        id            TEXT PRIMARY KEY,
+        name          TEXT NOT NULL,
+        email         TEXT UNIQUE NOT NULL,
+        password_hash TEXT,
+        google_id     TEXT UNIQUE,
+        created_at    TEXT DEFAULT (datetime('now'))
       )
-    `);
+    `, async (err) => {
+      if (!err) {
+        // Migration: Add google_id column if it doesn't exist
+        db.all("PRAGMA table_info(users)", (err, columns) => {
+          if (!err) {
+            const hasGoogleId = columns.some(c => c.name === 'google_id');
+            const passwordHashColumn = columns.find(c => c.name === 'password_hash');
+            const isPasswordHashNotNull = passwordHashColumn && passwordHashColumn.notnull === 1;
+
+            const needsGoogleId = !hasGoogleId;
+            const needsPasswordNullable = isPasswordHashNotNull;
+
+            if (needsGoogleId || needsPasswordNullable) {
+              console.log('[Database] Migrating users table for Google OAuth support...');
+              db.serialize(() => {
+                db.run("ALTER TABLE users RENAME TO users_old");
+                db.run(`
+                  CREATE TABLE users (
+                    id            TEXT PRIMARY KEY,
+                    name          TEXT NOT NULL,
+                    email         TEXT UNIQUE NOT NULL,
+                    password_hash TEXT,
+                    google_id     TEXT UNIQUE,
+                    created_at    TEXT DEFAULT (datetime('now'))
+                  )
+                `);
+                
+                // Determine what columns to copy
+                // If we are adding google_id, we select NULL for it from the old table
+                db.run(`
+                  INSERT INTO users (id, name, email, password_hash, google_id, created_at)
+                  SELECT id, name, email, password_hash, ${hasGoogleId ? 'google_id' : 'NULL'}, created_at 
+                  FROM users_old
+                `);
+                
+                db.run("DROP TABLE users_old");
+                console.log('[Database] Users table migration complete.');
+              });
+            }
+          }
+        });
+      }
+    });
 
     db.run(`
       CREATE TABLE IF NOT EXISTS notes (

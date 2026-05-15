@@ -20,9 +20,27 @@ import NoteEditor from '../components/NoteEditor';
 import { useNotes } from '../hooks/useNotes';
 import { useDebounce } from '../hooks/useDebounce';
 import { notesApi } from '../api/notes';
+import { useAuth } from '../context/AuthContext';
 
 const DashboardPage = () => {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { loginWithToken } = useAuth();
+  
+  // ── Handle Google OAuth redirect token ───────────────────────
+  useEffect(() => {
+    const token = searchParams.get('token');
+    if (token) {
+      // Login with the provided token
+      loginWithToken(token).then((res) => {
+        if (res.success) {
+          // Remove token from URL for security and cleanliness
+          searchParams.delete('token');
+          setSearchParams(searchParams, { replace: true });
+        }
+      });
+    }
+  }, [searchParams, loginWithToken, setSearchParams]);
+
   const isArchived = searchParams.get('archived') === 'true';
 
   const { notes, isLoading, fetchNotes, createNote, updateNoteLocally, deleteNote, setNotes } = useNotes();

@@ -8,6 +8,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Sparkles, User, Mail, Lock, Loader2, AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import GoogleLoginButton from '../components/GoogleLoginButton';
 
 const RegisterPage = () => {
   const { register, isLoading } = useAuth();
@@ -131,6 +132,17 @@ const RegisterPage = () => {
               {isLoading ? 'Creating account…' : 'Create Account'}
             </button>
           </form>
+
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-200 dark:border-dark-700"></div>
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-white dark:bg-dark-800 px-2 text-gray-500 dark:text-gray-400">Or continue with</span>
+            </div>
+          </div>
+
+          <GoogleLoginButton />
 
           <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-5">
             Already have an account?{' '}
