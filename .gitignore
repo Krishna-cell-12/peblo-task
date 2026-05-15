@@ -1,0 +1,18 @@
+# ─── Backend ────────────────────────────────────────────────────
+backend/node_modules/
+backend/data/           # SQLite DB files (user data)
+backend/.env            # Never commit real secrets
+
+# ─── Frontend ───────────────────────────────────────────────────
+frontend/node_modules/
+frontend/dist/
+
+# ─── General ────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.log
+npm-debug.log*
+.vscode/
+.idea/
+*.sqlite
+*.db

@@ -1,0 +1,38 @@
+{
+  "POST /notes/:id/generate-summary": {
+    "description": "AI summary generated using Google Gemini 1.5 Flash model.",
+    "request": {
+      "note_id": "NOTE_001",
+      "note_title": "Project Planning",
+      "note_content": "## Sprint Planning\n\nThis sprint we need to:\n- Review the API design\n- Set up CI/CD pipeline\n- Write unit tests for auth module\n- Schedule design review meeting with the team\n\nDeadline: End of next week\nTeam: Backend (3 devs), Frontend (2 devs)"
+    },
+    "response": {
+      "note_id": "NOTE_001",
+      "summary": "Weekly project planning discussion focusing on sprint deliverables for the backend and frontend teams. Key priorities include API design review, CI/CD pipeline setup, and unit testing for the auth module, with a deadline at the end of next week.",
+      "action_items": [
+        "Review API design documentation with the team",
+        "Set up CI/CD pipeline for automated deployments",
+        "Write unit tests for the authentication module",
+        "Schedule design review meeting with backend and frontend"
+      ],
+      "suggested_title": "Sprint Planning Notes — Week Deliverables",
+      "model_used": "gemini-1.5-flash",
+      "generated_at": "2026-05-14T12:10:00Z"
+    }
+  },
+  "POST /notes/:id/generate-summary (mock fallback)": {
+    "description": "Response returned when LLM_API_KEY is not configured (graceful fallback mode).",
+    "response": {
+      "note_id": "NOTE_002",
+      "summary": "This note titled \"Project Planning\" covers: This sprint we need to Review the API design... The content outlines key ideas and considerations for the topic at hand. Review the full note for complete context.",
+      "action_items": [
+        "Review the full note content carefully",
+        "Identify and prioritise key tasks",
+        "Schedule follow-up as needed"
+      ],
+      "suggested_title": "Project Planning — Review & Action",
+      "model_used": "mock (no LLM_API_KEY configured)",
+      "generated_at": "2026-05-14T12:10:00Z"
+    }
+  }
+}

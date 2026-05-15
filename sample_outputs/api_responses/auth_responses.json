@@ -1,0 +1,44 @@
+{
+  "POST /auth/signup": {
+    "request": {
+      "name": "John Doe",
+      "email": "john@example.com",
+      "password": "securepass123"
+    },
+    "response": {
+      "message": "Account created successfully.",
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IlVTUl8wMDEiLCJlbWFpbCI6ImpvaG5AZXhhbXBsZS5jb20iLCJuYW1lIjoiSm9obiBEb2UiLCJpYXQiOjE3MTU2ODAwMDAsImV4cCI6MTcxNjI4NDgwMH0.SAMPLE_SIGNATURE",
+      "user": {
+        "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        "name": "John Doe",
+        "email": "john@example.com"
+      }
+    }
+  },
+  "POST /auth/login": {
+    "request": {
+      "email": "john@example.com",
+      "password": "securepass123"
+    },
+    "response": {
+      "message": "Login successful.",
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.SAMPLE",
+      "user": {
+        "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        "name": "John Doe",
+        "email": "john@example.com"
+      }
+    }
+  },
+  "POST /auth/login (invalid)": {
+    "request": {
+      "email": "john@example.com",
+      "password": "wrongpassword"
+    },
+    "response_status": 401,
+    "response": {
+      "error": "AuthError",
+      "message": "Invalid email or password."
+    }
+  }
+}

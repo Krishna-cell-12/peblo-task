@@ -1,0 +1,48 @@
+{
+  "GET /insights": {
+    "description": "Productivity insights dashboard data for a user with active notes.",
+    "response": {
+      "total_notes": 12,
+      "archived_notes": 3,
+      "public_notes": 2,
+      "ai_summaries_generated": 7,
+      "recently_edited": [
+        {
+          "id": "NOTE_001",
+          "title": "Sprint Planning Notes",
+          "updated_at": "2026-05-14T12:05:30Z",
+          "tags": ["work", "planning"]
+        },
+        {
+          "id": "NOTE_002",
+          "title": "Meeting Notes — May 13",
+          "updated_at": "2026-05-13T09:30:00Z",
+          "tags": ["meeting"]
+        },
+        {
+          "id": "NOTE_003",
+          "title": "Research: AI Integration Patterns",
+          "updated_at": "2026-05-12T16:45:00Z",
+          "tags": ["research", "ai"]
+        }
+      ],
+      "most_used_tags": [
+        { "tag": "work",     "count": 6 },
+        { "tag": "meeting",  "count": 4 },
+        { "tag": "research", "count": 3 },
+        { "tag": "planning", "count": 2 },
+        { "tag": "ai",       "count": 2 }
+      ],
+      "activity_last_7_days": [
+        { "date": "2026-05-08", "count": 1 },
+        { "date": "2026-05-09", "count": 0 },
+        { "date": "2026-05-10", "count": 2 },
+        { "date": "2026-05-11", "count": 0 },
+        { "date": "2026-05-12", "count": 3 },
+        { "date": "2026-05-13", "count": 1 },
+        { "date": "2026-05-14", "count": 2 }
+      ],
+      "generated_at": "2026-05-14T22:00:00Z"
+    }
+  }
+}

@@ -1,0 +1,159 @@
+/* src/index.css — Global styles and Tailwind base */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── CSS Custom Properties ──────────────────────────────────────── */
+:root {
+  --scrollbar-thumb: #4f4f75;
+  --scrollbar-track: #1a1a2e;
+}
+
+/* ─── Base Resets ────────────────────────────────────────────────── */
+@layer base {
+  * {
+    @apply box-border;
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+  }
+
+  *::-webkit-scrollbar { width: 6px; height: 6px; }
+  *::-webkit-scrollbar-track { background: var(--scrollbar-track); border-radius: 3px; }
+  *::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 3px; }
+  *::-webkit-scrollbar-thumb:hover { background: #6c63ff; }
+
+  html { @apply antialiased; }
+
+  body {
+    @apply bg-gray-50 text-gray-900 font-sans;
+    @apply dark:bg-dark-900 dark:text-gray-100;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  }
+
+  h1, h2, h3, h4, h5, h6 { @apply font-semibold tracking-tight; }
+
+  ::selection { @apply bg-brand-500/30 text-brand-900 dark:text-brand-100; }
+}
+
+/* ─── Component Utilities ────────────────────────────────────────── */
+@layer components {
+  /* Glassmorphism card */
+  .glass-card {
+    @apply bg-white/70 dark:bg-dark-700/70 backdrop-blur-md
+           border border-white/30 dark:border-dark-500/30
+           shadow-card dark:shadow-card-dark rounded-xl;
+  }
+
+  /* Primary button */
+  .btn-primary {
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm
+           bg-brand-500 hover:bg-brand-600 active:bg-brand-700
+           text-white shadow-glow-sm hover:shadow-glow
+           transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  /* Secondary button */
+  .btn-secondary {
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm
+           bg-white dark:bg-dark-600 hover:bg-gray-50 dark:hover:bg-dark-500
+           text-gray-700 dark:text-gray-200
+           border border-gray-200 dark:border-dark-400
+           transition-all duration-200;
+  }
+
+  /* Ghost button */
+  .btn-ghost {
+    @apply inline-flex items-center gap-2 px-3 py-1.5 rounded-lg font-medium text-sm
+           hover:bg-gray-100 dark:hover:bg-dark-600 text-gray-600 dark:text-gray-400
+           transition-all duration-150;
+  }
+
+  /* Input field */
+  .input {
+    @apply w-full px-3 py-2 rounded-lg text-sm
+           bg-white dark:bg-dark-700
+           border border-gray-200 dark:border-dark-500
+           text-gray-900 dark:text-gray-100
+           placeholder-gray-400 dark:placeholder-gray-500
+           focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500
+           transition-all duration-200;
+  }
+
+  /* Tag badge */
+  .tag-badge {
+    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium
+           bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300
+           border border-brand-200 dark:border-brand-700/40;
+  }
+
+  /* Sidebar item */
+  .sidebar-item {
+    @apply flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium
+           text-gray-600 dark:text-gray-400
+           hover:bg-gray-100 dark:hover:bg-dark-600
+           hover:text-gray-900 dark:hover:text-gray-100
+           cursor-pointer transition-all duration-150;
+  }
+
+  .sidebar-item.active {
+    @apply bg-brand-50 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300
+           border border-brand-200/50 dark:border-brand-700/30;
+  }
+
+  /* Note card */
+  .note-card {
+    @apply p-4 rounded-xl border cursor-pointer
+           bg-white dark:bg-dark-700
+           border-gray-100 dark:border-dark-500
+           hover:border-brand-300 dark:hover:border-brand-600
+           hover:shadow-glow-sm
+           transition-all duration-200 animate-fade-in;
+  }
+
+  .note-card.selected {
+    @apply border-brand-400 dark:border-brand-500 shadow-glow-sm
+           bg-brand-50/30 dark:bg-brand-900/20;
+  }
+
+  /* Editor toolbar button */
+  .editor-btn {
+    @apply p-1.5 rounded hover:bg-gray-100 dark:hover:bg-dark-600
+           text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white
+           transition-colors duration-150;
+  }
+
+  /* Kbd shortcut badge */
+  .kbd {
+    @apply inline-flex items-center px-1.5 py-0.5 rounded text-xs font-mono
+           bg-gray-100 dark:bg-dark-600 text-gray-500 dark:text-gray-400
+           border border-gray-200 dark:border-dark-400;
+  }
+}
+
+/* ─── Markdown Prose ─────────────────────────────────────────────── */
+.prose-dark {
+  @apply text-gray-800 dark:text-gray-200;
+}
+.prose-dark h1, .prose-dark h2, .prose-dark h3 {
+  @apply text-gray-900 dark:text-white font-semibold;
+}
+.prose-dark code {
+  @apply bg-gray-100 dark:bg-dark-600 text-brand-600 dark:text-brand-400
+         px-1 py-0.5 rounded text-sm font-mono;
+}
+.prose-dark pre {
+  @apply bg-gray-900 dark:bg-dark-900 rounded-lg p-4 overflow-x-auto my-3;
+}
+.prose-dark pre code {
+  @apply bg-transparent text-green-400 dark:text-green-300;
+}
+.prose-dark blockquote {
+  @apply border-l-4 border-brand-400 pl-4 italic text-gray-500 dark:text-gray-400 my-3;
+}
+.prose-dark a {
+  @apply text-brand-500 hover:text-brand-600 underline;
+}
+.prose-dark ul { @apply list-disc pl-5 space-y-1; }
+.prose-dark ol { @apply list-decimal pl-5 space-y-1; }
+.prose-dark hr { @apply border-gray-200 dark:border-dark-500 my-4; }

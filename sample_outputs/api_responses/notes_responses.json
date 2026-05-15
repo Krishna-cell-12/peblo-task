@@ -1,0 +1,86 @@
+{
+  "POST /notes (create)": {
+    "request_headers": {
+      "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.SAMPLE"
+    },
+    "request_body": {
+      "title": "Project Planning",
+      "content": "## Sprint Planning\n\nThis sprint we need to:\n- Review the API design\n- Set up CI/CD pipeline\n- Write unit tests for auth module\n- Schedule design review meeting",
+      "tags": ["work", "planning"]
+    },
+    "response_status": 201,
+    "response": {
+      "note": {
+        "id": "NOTE_001",
+        "user_id": "USR_001",
+        "title": "Project Planning",
+        "content": "## Sprint Planning\n\nThis sprint we need to:\n- Review the API design\n- Set up CI/CD pipeline\n- Write unit tests for auth module\n- Schedule design review meeting",
+        "tags": ["work", "planning"],
+        "is_archived": false,
+        "is_public": false,
+        "share_id": null,
+        "created_at": "2026-05-14T12:00:00Z",
+        "updated_at": "2026-05-14T12:00:00Z"
+      }
+    }
+  },
+  "GET /notes (with search)": {
+    "request_query": "?q=sprint&tag=work&sort=updated_at",
+    "response": {
+      "notes": [
+        {
+          "id": "NOTE_001",
+          "title": "Project Planning",
+          "content": "## Sprint Planning...",
+          "tags": ["work", "planning"],
+          "is_archived": false,
+          "is_public": false,
+          "share_id": null,
+          "updated_at": "2026-05-14T12:00:00Z",
+          "created_at": "2026-05-14T12:00:00Z"
+        }
+      ],
+      "pagination": {
+        "total": 1,
+        "page": 1,
+        "limit": 20,
+        "totalPages": 1
+      }
+    }
+  },
+  "PATCH /notes/:id (auto-save)": {
+    "request_body": {
+      "title": "Sprint Planning Notes",
+      "content": "## Sprint Planning\n\nUpdated content...",
+      "tags": ["work", "planning", "sprint"]
+    },
+    "response": {
+      "note": {
+        "id": "NOTE_001",
+        "title": "Sprint Planning Notes",
+        "tags": ["work", "planning", "sprint"],
+        "updated_at": "2026-05-14T12:05:30Z"
+      }
+    }
+  },
+  "POST /notes/:id/share": {
+    "response": {
+      "message": "Note is now public.",
+      "share_id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+      "share_url": "/shared/f47ac10b-58cc-4372-a567-0e02b2c3d479"
+    }
+  },
+  "GET /shared/:shareId": {
+    "response": {
+      "note": {
+        "id": "NOTE_001",
+        "title": "Sprint Planning Notes",
+        "content": "## Sprint Planning...",
+        "tags": ["work", "planning"],
+        "author": "John Doe",
+        "updated_at": "2026-05-14T12:05:30Z",
+        "created_at": "2026-05-14T12:00:00Z"
+      }
+    }
+  }
+}
