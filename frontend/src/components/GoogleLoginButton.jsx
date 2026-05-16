@@ -1,9 +1,14 @@
 // src/components/GoogleLoginButton.jsx
 import React from 'react';
 
+// In dev, use the Vite proxy (/api → backend). In production, set VITE_BACKEND_URL.
+const googleAuthUrl = import.meta.env.VITE_BACKEND_URL
+  ? `${import.meta.env.VITE_BACKEND_URL.replace(/\/$/, '')}/api/auth/google`
+  : '/api/auth/google';
+
 const GoogleLoginButton = () => {
   const handleGoogleLogin = () => {
-    window.location.href = 'http://localhost:5001/auth/google';
+    window.location.href = googleAuthUrl;
   };
 
   return (

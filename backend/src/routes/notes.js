@@ -96,15 +96,17 @@ router.post('/', async (req, res, next) => {
     const { title = 'Untitled', content = '', tags = [] } = req.body;
     const id = uuidv4();
     const now = new Date().toISOString();
+    const userId = req.user.id;
 
     await run(`
       INSERT INTO notes (id, user_id, title, content, tags, created_at, updated_at)
       VALUES (?, ?, ?, ?, ?, ?, ?)
-    `, [id, req.user.id, title, content, JSON.stringify(tags), now, now]);
+    `, [id, userId, title, content, JSON.stringify(tags), now, now]);
 
     const note = await get('SELECT * FROM notes WHERE id = ?', [id]);
     return res.status(201).json({ note: formatNote(note) });
   } catch (err) {
+    console.error('Error creating note:', err.message);
     next(err);
   }
 });

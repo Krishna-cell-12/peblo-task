@@ -10,6 +10,13 @@ import client from '../api/client';
 
 const AuthContext = createContext(null);
 
+const getAuthErrorMessage = (err, fallback) => {
+  if (!err.response) {
+    return 'Cannot reach the server. Start the backend (cd backend && npm run dev), or run both from the project root with npm run dev.';
+  }
+  return err.response?.data?.message || fallback;
+};
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
     try {
@@ -46,7 +53,7 @@ export const AuthProvider = ({ children }) => {
       persistAuth(data.token, data.user);
       return { success: true };
     } catch (err) {
-      const msg = err.response?.data?.message || 'Registration failed. Please try again.';
+      const msg = getAuthErrorMessage(err, 'Registration failed. Please try again.');
       setError(msg);
       return { success: false, error: msg };
     } finally {
@@ -63,7 +70,7 @@ export const AuthProvider = ({ children }) => {
       persistAuth(data.token, data.user);
       return { success: true };
     } catch (err) {
-      const msg = err.response?.data?.message || 'Invalid credentials.';
+      const msg = getAuthErrorMessage(err, 'Invalid credentials.');
       setError(msg);
       return { success: false, error: msg };
     } finally {

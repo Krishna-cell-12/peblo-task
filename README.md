@@ -102,6 +102,20 @@ cd peblo_task
 
 ---
 
+### Quick start (frontend + backend)
+
+From the **project root**, after backend and frontend dependencies are installed (see below):
+
+```bash
+npm install          # installs concurrently for the dev script
+npm run install:all  # backend + frontend dependencies
+npm run dev          # starts API on :5001 and UI on :5173
+```
+
+> Email/password sign-in and Google OAuth both require the **backend** to be running. If you only run `npm run dev` inside `frontend/`, API calls will fail with connection errors.
+
+---
+
 ### 2. Backend Setup
 
 ```bash
@@ -120,7 +134,7 @@ nano .env   # or use any text editor
 
 **Minimum `.env` configuration:**
 ```env
-PORT=5000
+PORT=5001
 DATABASE_URL=./data/peblo.db
 JWT_SECRET=replace_with_a_long_random_string
 JWT_EXPIRES_IN=7d
@@ -137,7 +151,7 @@ npm run dev
 npm start
 ```
 
-The backend will start at **http://localhost:5000**. On first run, it automatically creates the SQLite database at `./data/peblo.db`.
+The backend will start at **http://localhost:5001** (must match the proxy in `frontend/vite.config.js`). On first run, it automatically creates the SQLite database at `./data/peblo.db`.
 
 ---
 
@@ -188,7 +202,7 @@ Tests cover:
 
 ```env
 # ─── Backend (.env) ───────────────────────────────────────────
-PORT=5000                        # Server port
+PORT=5001                        # Server port (match vite.config.js proxy)
 NODE_ENV=development             # development | production | test
 DATABASE_URL=./data/peblo.db     # SQLite file path
 JWT_SECRET=your_secret_here      # Any long random string

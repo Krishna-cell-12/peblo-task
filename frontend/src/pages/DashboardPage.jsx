@@ -11,9 +11,10 @@
 //  - Auto-selects newly created note
 // ─────────────────────────────────────────────────────────────────
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Search, X, Tag, SlidersHorizontal } from 'lucide-react';
+import { Search, X, Tag } from 'lucide-react';
+import confetti from 'canvas-confetti';
 import Sidebar from '../components/Sidebar';
 import NoteCard from '../components/NoteCard';
 import NoteEditor from '../components/NoteEditor';
@@ -54,6 +55,11 @@ const DashboardPage = () => {
   // Collect all unique tags from loaded notes
   const allTags = [...new Set(notes.flatMap((n) => n.tags || []))].slice(0, 20);
 
+  // ── Clear selection when switching between archive/notes ──────
+  useEffect(() => {
+    setSelectedNoteId(null);
+  }, [isArchived]);
+
   // ── Load notes whenever filters or tab changes ───────────────
   useEffect(() => {
     fetchNotes({
@@ -61,18 +67,32 @@ const DashboardPage = () => {
       tag: activeTag,
       archived: isArchived ? 'true' : 'false',
     });
-  }, [debouncedSearch, activeTag, isArchived]);
+  }, [debouncedSearch, activeTag, isArchived, fetchNotes]);
 
   // ── Selected note object ─────────────────────────────────────
   const selectedNote = notes.find((n) => n.id === selectedNoteId) || null;
 
-  // ── Create new note ──────────────────────────────────────────
+  /**
+   * Create a new note with optimistic UI update.
+   * Automatically selects the new note and triggers confetti on first note creation.
+   * Handles API errors gracefully with console error logging.
+   */
   const handleNewNote = async () => {
     try {
+      const isFirstNote = notes.length === 0;
       const note = await createNote({ title: 'Untitled', content: '', tags: [] });
       setSelectedNoteId(note.id);
+      // Trigger confetti on first note creation
+      if (isFirstNote) {
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 },
+          zIndex: 9999,
+        });
+      }
     } catch (err) {
-      console.error('Failed to create note:', err);
+      console.error('Failed to create note:', err.response?.data || err.message || err);
     }
   };
 
@@ -221,11 +241,20 @@ const DashboardPage = () => {
 
       {/* ── Right: Note Editor ────────────────────────────────── */}
       <div className="flex-1 flex flex-col h-full overflow-hidden">
-        <NoteEditor
-          note={selectedNote}
-          onUpdate={handleNoteUpdate}
-          onShare={handleShare}
-        />
+        {selectedNote ? (
+          <NoteEditor
+            note={selectedNote}
+            onUpdate={handleNoteUpdate}
+            onShare={handleShare}
+          />
+        ) : (
+          <div className="flex-1 flex items-center justify-center text-gray-400 dark:text-gray-600">
+            <div className="text-center">
+              <p className="text-sm font-medium">Select a note to start editing</p>
+              <p className="text-xs mt-1">or create a new one</p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -21,7 +21,8 @@ const db = new sqlite3.Database(path.resolve(DB_PATH), (err) => {
   if (err) {
     console.error('Could not connect to database', err);
   } else {
-    // console.log('Connected to SQLite database');
+    // Enable foreign keys for this connection
+    db.run('PRAGMA foreign_keys = ON');
   }
 });
 
@@ -56,97 +57,106 @@ const all = (sql, params = []) => {
 };
 
 // ─── Schema Definition ────────────────────────────────────────────
-const initDb = async () => {
-  // Use a transaction-like sequence
-  db.serialize(() => {
-    db.run('PRAGMA journal_mode = WAL');
-    db.run('PRAGMA foreign_keys = ON');
+const initDb = () => {
+  return new Promise((resolve, reject) => {
+    // Use a transaction-like sequence
+    db.serialize(() => {
+      db.run('PRAGMA journal_mode = WAL');
+      db.run('PRAGMA foreign_keys = ON');
 
-    db.run(`
-      CREATE TABLE IF NOT EXISTS users (
-        id            TEXT PRIMARY KEY,
-        name          TEXT NOT NULL,
-        email         TEXT UNIQUE NOT NULL,
-        password_hash TEXT,
-        google_id     TEXT UNIQUE,
-        created_at    TEXT DEFAULT (datetime('now'))
-      )
-    `, async (err) => {
-      if (!err) {
-        // Migration: Add google_id column if it doesn't exist
-        db.all("PRAGMA table_info(users)", (err, columns) => {
-          if (!err) {
-            const hasGoogleId = columns.some(c => c.name === 'google_id');
-            const passwordHashColumn = columns.find(c => c.name === 'password_hash');
-            const isPasswordHashNotNull = passwordHashColumn && passwordHashColumn.notnull === 1;
+      db.run(`
+        CREATE TABLE IF NOT EXISTS users (
+          id            TEXT PRIMARY KEY,
+          name          TEXT NOT NULL,
+          email         TEXT UNIQUE NOT NULL,
+          password_hash TEXT,
+          google_id     TEXT UNIQUE,
+          created_at    TEXT DEFAULT (datetime('now'))
+        )
+      `, (err) => {
+        if (!err) {
+          // Migration: Add google_id column if it doesn't exist
+          db.all("PRAGMA table_info(users)", (err, columns) => {
+            if (!err) {
+              const hasGoogleId = columns.some(c => c.name === 'google_id');
+              const passwordHashColumn = columns.find(c => c.name === 'password_hash');
+              const isPasswordHashNotNull = passwordHashColumn && passwordHashColumn.notnull === 1;
 
-            const needsGoogleId = !hasGoogleId;
-            const needsPasswordNullable = isPasswordHashNotNull;
+              const needsGoogleId = !hasGoogleId;
+              const needsPasswordNullable = isPasswordHashNotNull;
 
-            if (needsGoogleId || needsPasswordNullable) {
-              console.log('[Database] Migrating users table for Google OAuth support...');
-              db.serialize(() => {
-                db.run("ALTER TABLE users RENAME TO users_old");
-                db.run(`
-                  CREATE TABLE users (
-                    id            TEXT PRIMARY KEY,
-                    name          TEXT NOT NULL,
-                    email         TEXT UNIQUE NOT NULL,
-                    password_hash TEXT,
-                    google_id     TEXT UNIQUE,
-                    created_at    TEXT DEFAULT (datetime('now'))
-                  )
-                `);
-                
-                // Determine what columns to copy
-                // If we are adding google_id, we select NULL for it from the old table
-                db.run(`
-                  INSERT INTO users (id, name, email, password_hash, google_id, created_at)
-                  SELECT id, name, email, password_hash, ${hasGoogleId ? 'google_id' : 'NULL'}, created_at 
-                  FROM users_old
-                `);
-                
-                db.run("DROP TABLE users_old");
-                console.log('[Database] Users table migration complete.');
-              });
+              if (needsGoogleId || needsPasswordNullable) {
+                console.log('[Database] Migrating users table for Google OAuth support...');
+                db.serialize(() => {
+                  db.run("ALTER TABLE users RENAME TO users_old");
+                  db.run(`
+                    CREATE TABLE users (
+                      id            TEXT PRIMARY KEY,
+                      name          TEXT NOT NULL,
+                      email         TEXT UNIQUE NOT NULL,
+                      password_hash TEXT,
+                      google_id     TEXT UNIQUE,
+                      created_at    TEXT DEFAULT (datetime('now'))
+                    )
+                  `);
+                  
+                  // Determine what columns to copy
+                  // If we are adding google_id, we select NULL for it from the old table
+                  db.run(`
+                    INSERT INTO users (id, name, email, password_hash, google_id, created_at)
+                    SELECT id, name, email, password_hash, ${hasGoogleId ? 'google_id' : 'NULL'}, created_at 
+                    FROM users_old
+                  `);
+                  
+                  db.run("DROP TABLE users_old");
+                  console.log('[Database] Users table migration complete.');
+                });
+              }
             }
-          }
-        });
-      }
+          });
+        }
+      });
+
+      db.run(`
+        CREATE TABLE IF NOT EXISTS notes (
+          id          TEXT PRIMARY KEY,
+          user_id     TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          title       TEXT NOT NULL DEFAULT 'Untitled',
+          content     TEXT NOT NULL DEFAULT '',
+          tags        TEXT NOT NULL DEFAULT '[]',
+          is_archived INTEGER NOT NULL DEFAULT 0,
+          is_public   INTEGER NOT NULL DEFAULT 0,
+          share_id    TEXT UNIQUE,
+          created_at  TEXT DEFAULT (datetime('now')),
+          updated_at  TEXT DEFAULT (datetime('now'))
+        )
+      `);
+
+      db.run(`
+        CREATE TABLE IF NOT EXISTS ai_usage (
+          id             TEXT PRIMARY KEY,
+          user_id        TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          note_id        TEXT NOT NULL REFERENCES notes(id) ON DELETE CASCADE,
+          summary        TEXT,
+          action_items   TEXT NOT NULL DEFAULT '[]',
+          suggested_title TEXT,
+          model_used     TEXT,
+          created_at     TEXT DEFAULT (datetime('now'))
+        )
+      `);
+
+      db.run('CREATE INDEX IF NOT EXISTS idx_notes_user_id ON notes(user_id)');
+      db.run('CREATE INDEX IF NOT EXISTS idx_notes_updated_at ON notes(updated_at)');
+      db.run('CREATE INDEX IF NOT EXISTS idx_notes_share_id ON notes(share_id)');
+      db.run('CREATE INDEX IF NOT EXISTS idx_ai_usage_note_id ON ai_usage(note_id)', (err) => {
+        if (err) {
+          reject(err);
+        } else {
+          console.log('[Database] Initialization complete.');
+          resolve();
+        }
+      });
     });
-
-    db.run(`
-      CREATE TABLE IF NOT EXISTS notes (
-        id          TEXT PRIMARY KEY,
-        user_id     TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-        title       TEXT NOT NULL DEFAULT 'Untitled',
-        content     TEXT NOT NULL DEFAULT '',
-        tags        TEXT NOT NULL DEFAULT '[]',
-        is_archived INTEGER NOT NULL DEFAULT 0,
-        is_public   INTEGER NOT NULL DEFAULT 0,
-        share_id    TEXT UNIQUE,
-        created_at  TEXT DEFAULT (datetime('now')),
-        updated_at  TEXT DEFAULT (datetime('now'))
-      )
-    `);
-
-    db.run(`
-      CREATE TABLE IF NOT EXISTS ai_usage (
-        id             TEXT PRIMARY KEY,
-        user_id        TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-        note_id        TEXT NOT NULL REFERENCES notes(id) ON DELETE CASCADE,
-        summary        TEXT,
-        action_items   TEXT NOT NULL DEFAULT '[]',
-        suggested_title TEXT,
-        model_used     TEXT,
-        created_at     TEXT DEFAULT (datetime('now'))
-      )
-    `);
-
-    db.run('CREATE INDEX IF NOT EXISTS idx_notes_user_id ON notes(user_id)');
-    db.run('CREATE INDEX IF NOT EXISTS idx_notes_updated_at ON notes(updated_at)');
-    db.run('CREATE INDEX IF NOT EXISTS idx_notes_share_id ON notes(share_id)');
-    db.run('CREATE INDEX IF NOT EXISTS idx_ai_usage_note_id ON ai_usage(note_id)');
   });
 };
 

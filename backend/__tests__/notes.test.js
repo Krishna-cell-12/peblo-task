@@ -16,7 +16,7 @@ describe('Notes API', () => {
   let noteId;
 
   beforeAll(async () => {
-    const res = await request(app).post('/auth/signup').send({
+    const res = await request(app).post('/api/auth/signup').send({
       name: 'Notes Tester',
       email: `notes-${Date.now()}@example.com`,
       password: 'password123',
@@ -30,7 +30,7 @@ describe('Notes API', () => {
   describe('POST /notes', () => {
     it('should create a note', async () => {
       const res = await request(app)
-        .post('/notes')
+        .post('/api/notes')
         .set(auth())
         .send({ title: 'Test Note', content: 'Hello world content', tags: ['work', 'test'] });
       expect(res.status).toBe(201);
@@ -40,7 +40,7 @@ describe('Notes API', () => {
     });
 
     it('should require auth', async () => {
-      const res = await request(app).post('/notes').send({ title: 'Test' });
+      const res = await request(app).post('/api/notes').send({ title: 'Test' });
       expect(res.status).toBe(401);
     });
   });
@@ -48,20 +48,20 @@ describe('Notes API', () => {
   // ── GET /notes ─────────────────────────────────────────────────
   describe('GET /notes', () => {
     it('should list notes for the user', async () => {
-      const res = await request(app).get('/notes').set(auth());
+      const res = await request(app).get('/api/notes').set(auth());
       expect(res.status).toBe(200);
       expect(Array.isArray(res.body.notes)).toBe(true);
       expect(res.body.notes.length).toBeGreaterThan(0);
     });
 
     it('should filter notes by keyword', async () => {
-      const res = await request(app).get('/notes?q=Hello').set(auth());
+      const res = await request(app).get('/api/notes?q=Hello').set(auth());
       expect(res.status).toBe(200);
       expect(res.body.notes.some((n) => n.content.includes('Hello'))).toBe(true);
     });
 
     it('should filter notes by tag', async () => {
-      const res = await request(app).get('/notes?tag=work').set(auth());
+      const res = await request(app).get('/api/notes?tag=work').set(auth());
       expect(res.status).toBe(200);
       expect(res.body.notes.every((n) => n.tags.includes('work'))).toBe(true);
     });
@@ -80,7 +80,7 @@ describe('Notes API', () => {
 
     it('should return 404 for non-existent note', async () => {
       const res = await request(app)
-        .patch('/notes/non-existent-id')
+        .patch('/api/notes/non-existent-id')
         .set(auth())
         .send({ title: 'x' });
       expect(res.status).toBe(404);

@@ -7,11 +7,7 @@ export default defineConfig({
     port: 5173,
     // Proxy API calls to backend during development
     proxy: {
-      '/auth':     { target: 'http://localhost:5001', changeOrigin: true },
-      '/notes':    { target: 'http://localhost:5001', changeOrigin: true },
-      '/shared':   { target: 'http://localhost:5001', changeOrigin: true },
-      '/insights': { target: 'http://localhost:5001', changeOrigin: true },
-      '/health':   { target: 'http://localhost:5001', changeOrigin: true },
+      '/api': { target: 'http://localhost:5001', changeOrigin: true },
     },
   },
   build: {

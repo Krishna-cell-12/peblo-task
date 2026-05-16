@@ -46,8 +46,21 @@ const Sidebar = ({ onNewNote }) => {
       </div>
 
       {/* New Note Button */}
+      {/* 
+        Defensive handler: preventDefault() + null-check ensures button never
+        misbehaves if prop is not passed. This prevents accidental form submissions
+        and provides visible error for debugging.
+      */}
       <button
-        onClick={onNewNote}
+        type="button"
+        onClick={(e) => {
+          e.preventDefault();
+          if (onNewNote) {
+            onNewNote();
+          } else {
+            console.error('[Sidebar] onNewNote handler is not defined');
+          }
+        }}
         id="btn-new-note"
         className="btn-primary mx-1 mb-5 justify-center"
       >

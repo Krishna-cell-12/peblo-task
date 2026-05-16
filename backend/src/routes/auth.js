@@ -1,9 +1,9 @@
 // src/routes/auth.js
 // ─────────────────────────────────────────────────────────────────
 // Authentication routes:
-//   POST /auth/signup  — register a new user
-//   POST /auth/login   — log in and receive a JWT
-//   GET  /auth/me      — return current user profile (protected)
+//   POST /api/auth/signup  — register a new user
+//   POST /api/auth/login   — log in and receive a JWT
+//   GET  /api/auth/me      — return current user profile (protected)
 // ─────────────────────────────────────────────────────────────────
 
 const express = require('express');
@@ -36,21 +36,41 @@ router.post('/signup', async (req, res, next) => {
       return res.status(400).json({ error: 'ValidationError', message: 'Password must be at least 6 characters.' });
     }
 
-    // Check duplicate email
-    const existing = await get('SELECT id FROM users WHERE email = ?', [email.toLowerCase()]);
+    const normalizedEmail = email.toLowerCase().trim();
+    const trimmedName = name.trim();
+    const password_hash = await bcrypt.hash(password, 12);
+
+    // Check existing account (may be Google-only from OAuth)
+    const existing = await get(
+      'SELECT id, name, password_hash, google_id FROM users WHERE email = ?',
+      [normalizedEmail]
+    );
+
     if (existing) {
-      return res.status(409).json({ error: 'ConflictError', message: 'An account with this email already exists.' });
+      if (existing.password_hash) {
+        return res.status(409).json({ error: 'ConflictError', message: 'An account with this email already exists.' });
+      }
+      // Link local password to an existing Google-only account
+      await run(
+        'UPDATE users SET name = ?, password_hash = ? WHERE id = ?',
+        [trimmedName, password_hash, existing.id]
+      );
+      const user = { id: existing.id, name: trimmedName, email: normalizedEmail };
+      const token = signToken(user);
+      return res.status(201).json({
+        message: 'Password linked to your account successfully.',
+        token,
+        user,
+      });
     }
 
     const id = uuidv4();
-    const password_hash = await bcrypt.hash(password, 12);
-
     await run(
-      'INSERT INTO users (id, name, email, password_hash) VALUES (?, ?, ?, ?)',
-      [id, name.trim(), email.toLowerCase(), password_hash]
+      'INSERT INTO users (id, name, email, password_hash, google_id) VALUES (?, ?, ?, ?, NULL)',
+      [id, trimmedName, normalizedEmail, password_hash]
     );
 
-    const user = { id, name: name.trim(), email: email.toLowerCase() };
+    const user = { id, name: trimmedName, email: normalizedEmail };
     const token = signToken(user);
 
     return res.status(201).json({
@@ -72,9 +92,16 @@ router.post('/login', async (req, res, next) => {
       return res.status(400).json({ error: 'ValidationError', message: 'email and password are required.' });
     }
 
-    const user = await get('SELECT * FROM users WHERE email = ?', [email.toLowerCase()]);
+    const user = await get('SELECT * FROM users WHERE email = ?', [email.toLowerCase().trim()]);
     if (!user) {
       return res.status(401).json({ error: 'AuthError', message: 'Invalid email or password.' });
+    }
+
+    if (!user.password_hash) {
+      return res.status(401).json({
+        error: 'AuthError',
+        message: 'This account uses Google sign-in. Use Continue with Google or sign up to add a password.',
+      });
     }
 
     const passwordMatch = await bcrypt.compare(password, user.password_hash);
@@ -110,6 +137,7 @@ router.get('/me', authMiddleware, async (req, res, next) => {
 });
 
 // ── Google OAuth Routes ──────────────────────────────────────────
+require('../config/passport');
 const passport = require('passport');
 
 // Initiates the Google login

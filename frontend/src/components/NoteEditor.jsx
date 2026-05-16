@@ -13,9 +13,11 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import confetti from 'canvas-confetti';
 import {
   Save, Eye, EyeOff, Sparkles, Globe, Lock,
   Plus, X, CheckCircle, Loader2, Copy, Check,
+  Mic, Volume2,
 } from 'lucide-react';
 import { notesApi } from '../api/notes';
 import { useDebounce } from '../hooks/useDebounce';
@@ -33,10 +35,14 @@ const NoteEditor = ({ note, onUpdate, onShare }) => {
     note?.is_public ? { share_id: note.share_id, is_public: true } : null
   );
   const [copied, setCopied] = useState(false);
+  const [isDictating, setIsDictating] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
 
   const contentRef = useRef(null);
   const titleRef   = useRef(null);
   const isSaving   = useRef(false);
+  const recognition = useRef(null);
+  const utteranceRef = useRef(null);
 
   // Sync state when note changes (different note selected)
   useEffect(() => {
@@ -49,6 +55,15 @@ const NoteEditor = ({ note, onUpdate, onShare }) => {
   }, [note?.id]);
 
   // ── Auto-save via debounce ────────────────────────────────────
+  /**
+   * **Why Debounce for Auto-save?**: We delay API calls by 1.5 seconds while the user is
+   * editing. This prevents hammering the backend with requests on every keystroke.
+   * Only after 1.5 seconds of inactivity do we actually save. This balances responsiveness
+   * (user feels their edits are being persisted) with efficiency (minimal network load).
+   * 
+   * The `isSaving.current` ref prevents concurrent save requests even if multiple
+   * debounced updates trigger rapidly.
+   */
   const debouncedTitle   = useDebounce(title, 1500);
   const debouncedContent = useDebounce(content, 1500);
 
@@ -113,12 +128,89 @@ const NoteEditor = ({ note, onUpdate, onShare }) => {
     saveNote(title, content, newTags);
   };
 
+  // ── Trigger confetti celebration ──────────────────────────────
+  const triggerConfetti = useCallback(() => {
+    confetti({
+      particleCount: 100,
+      spread: 70,
+      origin: { y: 0.6 },
+      zIndex: 9999,
+    });
+  }, []);
+
+  // ── Voice Dictation (Speech Recognition) ───────────────────────
+  const handleDictate = useCallback(() => {
+    if (!window.SpeechRecognition && !window.webkitSpeechRecognition) {
+      alert('Speech Recognition not supported in your browser.');
+      return;
+    }
+
+    if (!recognition.current) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      recognition.current = new SpeechRecognition();
+      recognition.current.continuous = false;
+      recognition.current.interimResults = false;
+      recognition.current.language = 'en-US';
+
+      recognition.current.onstart = () => setIsDictating(true);
+      recognition.current.onend = () => setIsDictating(false);
+      recognition.current.onresult = (event) => {
+        let transcript = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          transcript += event.results[i][0].transcript;
+        }
+        if (transcript.trim()) {
+          setContent((prev) => (prev ? prev + ' ' + transcript : transcript));
+        }
+      };
+      recognition.current.onerror = (event) => {
+        console.error('Speech recognition error:', event.error);
+        setIsDictating(false);
+      };
+    }
+
+    if (isDictating) {
+      recognition.current.stop();
+      setIsDictating(false);
+    } else {
+      recognition.current.start();
+    }
+  }, [isDictating]);
+
+  // ── Text-to-Speech (Read Aloud) ────────────────────────────────
+  const handleReadAloud = useCallback((text) => {
+    if (!window.speechSynthesis) {
+      alert('Text-to-Speech not supported in your browser.');
+      return;
+    }
+
+    if (isSpeaking) {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+      return;
+    }
+
+    window.speechSynthesis.cancel();
+    utteranceRef.current = new SpeechSynthesisUtterance(text);
+    utteranceRef.current.rate = 1;
+    utteranceRef.current.pitch = 1;
+    utteranceRef.current.volume = 1;
+
+    utteranceRef.current.onstart = () => setIsSpeaking(true);
+    utteranceRef.current.onend = () => setIsSpeaking(false);
+    utteranceRef.current.onerror = () => setIsSpeaking(false);
+
+    window.speechSynthesis.speak(utteranceRef.current);
+  }, [isSpeaking]);
+
   // ── AI Summary ────────────────────────────────────────────────
   const handleGenerateSummary = async () => {
     setAiPanel('loading');
     try {
       const { data } = await notesApi.generateSummary(note.id);
       setAiPanel(data);
+      // Trigger confetti on successful AI summary generation
+      triggerConfetti();
     } catch (err) {
       setAiPanel({ error: err.response?.data?.message || 'AI generation failed.' });
     }
@@ -191,6 +283,18 @@ const NoteEditor = ({ note, onUpdate, onShare }) => {
           >
             {isPreview ? <EyeOff size={13} /> : <Eye size={13} />}
             {isPreview ? 'Edit' : 'Preview'}
+          </button>
+
+          {/* Dictate button */}
+          <button
+            onClick={handleDictate}
+            id="btn-dictate"
+            className={`editor-btn flex items-center gap-1.5 px-2 py-1.5 rounded text-xs font-medium
+                        transition-all duration-200 ${isDictating ? 'bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 animate-pulse' : 'text-gray-600 dark:text-gray-400'}`}
+            title="Click to dictate and add text via microphone"
+          >
+            <Mic size={13} className={isDictating ? 'animate-pulse' : ''} />
+            {isDictating ? 'Listening...' : 'Dictate'}
           </button>
 
           {/* AI Summary */}
@@ -348,6 +452,18 @@ const NoteEditor = ({ note, onUpdate, onShare }) => {
           <div className="flex items-center gap-2 mb-3">
             <Sparkles size={14} className="text-brand-500" />
             <span className="text-sm font-semibold text-brand-700 dark:text-brand-300">AI Summary</span>
+            {!aiPanel.error && aiPanel.summary && (
+              <button
+                onClick={() => handleReadAloud(aiPanel.summary)}
+                id="btn-listen-summary"
+                className={`editor-btn flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ml-auto mr-2
+                            ${isSpeaking ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400' : 'text-gray-600 dark:text-gray-400'}`}
+                title={isSpeaking ? 'Stop reading' : 'Read aloud'}
+              >
+                <Volume2 size={12} className={isSpeaking ? 'animate-pulse' : ''} />
+                {isSpeaking ? 'Listening...' : 'Listen'}
+              </button>
+            )}
             <button onClick={() => setAiPanel(null)} className="ml-auto editor-btn">
               <X size={13} />
             </button>
